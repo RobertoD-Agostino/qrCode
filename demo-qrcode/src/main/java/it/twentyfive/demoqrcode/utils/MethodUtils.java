@@ -2,8 +2,11 @@ package it.twentyfive.demoqrcode.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -15,6 +18,7 @@ import javax.swing.plaf.BorderUIResource.MatteBorderUIResource;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
+import com.google.zxing.EncodeHintType;
 import com.google.zxing.LuminanceSource;
 import com.google.zxing.MultiFormatReader;
 import com.google.zxing.WriterException;
@@ -24,6 +28,8 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -152,7 +158,52 @@ public class MethodUtils {
         
 
 
+
+        public static byte[] generateQrCodeImageWithLogo(String text, int width, int height, String logoPath) throws WriterException, IOException {
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        Map<EncodeHintType, Object> hints = new HashMap<>();
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        //hints.put(EncodeHintType.MARGIN, 1);
+        BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, width, height, hints);
+
+        ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
+        MatrixToImageConfig con = new MatrixToImageConfig(0xFFFFFFFF, 0xFF000000);
+
+        // Load the logo image
+        BufferedImage logo = ImageIO.read(new File(logoPath));
+        int logoWidth = logo.getWidth();
+        int logoHeight = logo.getHeight();
+
+        // Scale down the logo
+        int scaledLogoWidth = logoWidth / 30; // Adjust the scaling factor as needed
+        int scaledLogoHeight = logoHeight / 30; // Adjust the scaling factor as needed
+        BufferedImage scaledLogo = new BufferedImage(scaledLogoWidth, scaledLogoHeight, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = scaledLogo.createGraphics();
+        g.drawImage(logo, 0, 0, scaledLogoWidth, scaledLogoHeight, null);
+        g.dispose();
+
+        // Create a new image with the QR code and logo
+        BufferedImage qrCodeWithLogo = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = qrCodeWithLogo.createGraphics();
+        graphics.drawImage(MatrixToImageWriter.toBufferedImage(bitMatrix, con), 0, 0, null);
+
+        // Calculate the position to center the logo
+        int x = (width - logoWidth) / 2;
+        int y = (height - logoHeight) / 2;
+
+        // Draw the logo on the QR code
+        graphics.drawImage(logo, x, y, null);
+        graphics.dispose();
+
+        // Convert the final image to byte array
+        ByteArrayOutputStream finalOutputStream = new ByteArrayOutputStream();
+        ImageIO.write(qrCodeWithLogo, "PNG", finalOutputStream);
+        return finalOutputStream.toByteArray();
     }
+
+
+    }
+
 
 
 
